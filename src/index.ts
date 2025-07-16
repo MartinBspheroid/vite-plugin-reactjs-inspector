@@ -17,9 +17,29 @@ function getInspectorPath() {
   return pluginPath.replace(/\/dist$/, '/src')
 }
 
-const plugin: UnpluginFactory<PluginOptions | undefined> = () => {
+const plugin: UnpluginFactory<PluginOptions | undefined> = (options = {}) => {
   const inspectorPath = getInspectorPath()
   const rootPath = cwd().replaceAll('\\', '/')
+
+  // Set default options
+  const defaultOptions: PluginOptions = {
+    keyboardShortcut: 'alt+x',
+    position: 'top-right',
+    theme: {
+      primary: '#61DBFB',
+      secondary: '#20232A',
+      disabled: '#6B7280',
+    },
+  }
+
+  const mergedOptions = {
+    ...defaultOptions,
+    ...options,
+    theme: {
+      ...defaultOptions.theme,
+      ...options.theme,
+    },
+  }
 
   return {
     name: 'vite-plugin-reactjs-inspector',
@@ -52,6 +72,13 @@ const plugin: UnpluginFactory<PluginOptions | undefined> = () => {
       if (id === 'virtual:react-inspector-options') {
         return `export default {
           cwdPath: '${rootPath}/',
+          keyboardShortcut: '${mergedOptions.keyboardShortcut}',
+          position: '${mergedOptions.position}',
+          theme: {
+            primary: '${mergedOptions.theme?.primary}',
+            secondary: '${mergedOptions.theme?.secondary}',
+            disabled: '${mergedOptions.theme?.disabled}'
+          }
         }`
       }
       if (id.startsWith(inspectorPath)) {

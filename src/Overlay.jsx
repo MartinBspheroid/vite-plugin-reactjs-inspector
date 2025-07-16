@@ -3,9 +3,26 @@ import inspectorOptions from 'virtual:react-inspector-options'
 
 import './styles/overlay.css'
 
-const color = {
-  disabled: '#E2C6C6',
-  active: '#42b883',
+// Function to parse keyboard shortcut configuration
+function parseKeyboardShortcut(shortcut) {
+  const keys = shortcut.toLowerCase().split('+')
+  return {
+    alt: keys.includes('alt'),
+    ctrl: keys.includes('ctrl'),
+    shift: keys.includes('shift'),
+    key: keys[keys.length - 1],
+  }
+}
+
+// Function to check if keyboard event matches the shortcut
+function matchesKeyboardShortcut(event, shortcut) {
+  const parsed = parseKeyboardShortcut(shortcut)
+  return (
+    event.altKey === parsed.alt
+    && event.ctrlKey === parsed.ctrl
+    && event.shiftKey === parsed.shift
+    && event.key.toLowerCase() === parsed.key
+  )
 }
 
 const KEY_DATA = 'data-react-inspector'
@@ -99,6 +116,12 @@ function Overlay() {
     column: 0,
   })
   const floatsRef = useRef(null)
+
+  // Get theme colors from options
+  const color = {
+    disabled: inspectorOptions.theme?.disabled || '#6B7280',
+    active: inspectorOptions.theme?.primary || '#61DBFB',
+  }
 
   const baseUrl = useMemo(() => {
     const isClient = typeof window !== 'undefined'
@@ -201,13 +224,32 @@ function Overlay() {
     setActive(!active)
   }
 
+  // Keyboard event handler
+  const handleKeyDown = (event) => {
+    if (matchesKeyboardShortcut(event, inspectorOptions.keyboardShortcut || 'alt+x')) {
+      event.preventDefault()
+      onToggle()
+    }
+  }
+
+  // Add keyboard event listener
+  useEffect(() => {
+    document.addEventListener('keydown', handleKeyDown)
+    return () => {
+      document.removeEventListener('keydown', handleKeyDown)
+    }
+  }, [active])
+
+  // Get position class name based on configuration
+  const positionClass = `react-inspector-container--${inspectorOptions.position || 'top-right'}`
+
   const containerPosition = {}
   const bannerPosition = {}
 
   return (
     <div data-react-inspector-ignore={true}>
       <div
-        className={`react-inspector-container ${active ? '' : 'react-inspector-container--disabled'}`}
+        className={`react-inspector-container ${positionClass} ${active ? '' : 'react-inspector-container--disabled'}`}
         style={containerPosition}
       >
         <svg
